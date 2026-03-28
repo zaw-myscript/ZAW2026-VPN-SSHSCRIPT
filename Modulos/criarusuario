@@ -1,14 +1,9 @@
-cat << 'EOF' > /bin/criarusuario
 #!/bin/bash
-#====================================================
-#	@kiritosshxd (Edited Design)
-#====================================================
 IP=$(cat /etc/IP)
 cor1='\033[41;1;37m'
 cor2='\033[44;1;37m'
 scor='\033[0m'
 
-# Gerar client.ovpn
 newclient() {
     cp /etc/openvpn/client-common.txt ~/$1.ovpn
     echo "<ca>" >>~/$1.ovpn
@@ -41,25 +36,25 @@ fun_geraovpn() {
 clear
 echo -e "\E[44;1;37m           CRIAR USUARIO SSH           \E[0m"
 echo ""
-echo -ne "\033[1;32mNome do usuario: \033[1;37m"; read nome
+echo -ne "\033[1;32mInforme o Nome: \033[1;37m"; read nome
 while [[ -z $nome ]]; do
     echo -e "\n\033[1;31mNome Invalido!\033[0m"
-    echo -ne "\033[1;32mNome do usuario: \033[1;37m"; read nome
+    echo -ne "\033[1;32mInforme o Nome: \033[1;37m"; read nome
 done
-echo -ne "\033[1;32mSenha: \033[1;37m"; read senha
+echo -ne "\033[1;32mInforme a Senha: \033[1;37m"; read senha
 while [[ -z $senha ]]; do
     echo -e "\n\033[1;31mSenha Invalida!\033[0m"
-    echo -ne "\033[1;32mSenha: \033[1;37m"; read senha
+    echo -ne "\033[1;32mInforme a Senha: \033[1;37m"; read senha
 done
-echo -ne "\033[1;32mLimite de Conexao: \033[1;37m"; read limite
+echo -ne "\033[1;32mInforme o Limite de Conexoes: \033[1;37m"; read limite
 while [[ -z $limite ]] || [[ ! $limite =~ ^[0-9]+$ ]]; do
     echo -e "\n\033[1;31mLimite Invalido!\033[0m"
-    echo -ne "\033[1;32mLimite de Conexao: \033[1;37m"; read limite
+    echo -ne "\033[1;32mInforme o Limite de Conexoes: \033[1;37m"; read limite
 done
-echo -ne "\033[1;32mTempo de Duracao: \033[1;37m"; read dias
+echo -ne "\033[1;32mInforme os Dias de Validade: \033[1;37m"; read dias
 while [[ -z $dias ]] || [[ ! $dias =~ ^[0-9]+$ ]]; do
     echo -e "\n\033[1;31mDias Invalidos!\033[0m"
-    echo -ne "\033[1;32mTempo de Duracao: \033[1;37m"; read dias
+    echo -ne "\033[1;32mInforme os Dias de Validade: \033[1;37m"; read dias
 done
 
 validade=$(date '+%C%y-%m-%d' -d " +$dias days")
@@ -91,6 +86,4 @@ echo -e "   \033[1;35m◈───⪧ONLINE USER COUNT⪦────◈\033[0m"
 echo -e ""
 echo -e " \033[1;36mhttp://$IP:8888/server/online\033[0m"
 echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-EOF
-chmod +x /bin/criarusuario
-
+echo ""
