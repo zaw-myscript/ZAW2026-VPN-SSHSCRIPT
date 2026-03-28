@@ -1,39 +1,40 @@
 #!/bin/bash
 #====================================================
-#	SCRIPT: LIMITER SSHPLUS MANAGER
-#	DESENVOLVIDO POR:	CRAZY_VPN
-#	CONTATO TELEGRAM:	http://t.me/crazy_vpn
-#	CANAL TELEGRAM:	http://t.me/sshplus
+# Auto Connection Limiter (Strict Mode)
 #====================================================
-clear
+
 database="/root/usuarios.db"
-fun_multilogin() {
-	(
-		while read user; do
-			[[ $(grep -wc "$user" $database) != '0' ]] && limit="$(grep -w $user $database | cut -d' ' -f2)" || limit='1'
-			conssh="$(ps -u $user | grep sshd | wc -l)"
-			[[ "$conssh" -gt "$limit" ]] && {
-				pkill -u $user
-			}
-			[[ -e /etc/openvpn/openvpn-status.log ]] && {
-				ovp="$(grep -E ,"$user", /etc/openvpn/openvpn-status.log | wc -l)"
-				[[ "$ovp" -gt "$limit" ]] && {
-					pidokill=$(($limit - $ovp))
-					listpid=$(grep -E ,"$user", /etc/openvpn/openvpn-status.log | cut -d "," -f3 | head -n $pidokill)
-					while read ovpids; do
-						(
-							telnet localhost 7505 <<-EOF
-								kill $ovpids
-							EOF
-						) &>/dev/null &
-					done <<<"$listpid"
-				}
-			}
-		done <<<"$(awk -F: '$3 >= 1000 {print $1}' /etc/passwd)"
-	) &
-}
+
 while true; do
-    echo 'verificando...'
-	fun_multilogin > /dev/null 2>&1
-	sleep 15s
+    sleep 5
+    # Database မရှိရင် ကျော်မယ်
+    [[ ! -f "$database" ]] && continue
+
+    while read user limit; do
+        if [[ -n "$user" && -n "$limit" ]]; then
+            # SSH ချိတ်ဆက်မှု အရေအတွက်ကို ရေတွက်ခြင်း
+            s_ssh=$(ps -u $user 2>/dev/null | grep -w "sshd" | wc -l)
+            
+            # Dropbear ချိတ်ဆက်မှု အရေအတွက်ကို ရေတွက်ခြင်း
+            s_drop=$(ps -u $user 2>/dev/null | grep -w "dropbear" | wc -l)
+            
+            # OpenVPN ချိတ်ဆက်မှု အရေအတွက်ကို ရေတွက်ခြင်း (ရှိခဲ့လျှင်)
+            if [[ -f "/etc/openvpn/openvpn-status.log" ]]; then
+                s_ovpn=$(grep -w "$user" /etc/openvpn/openvpn-status.log | wc -l)
+            else
+                s_ovpn=0
+            fi
+            
+            # စုစုပေါင်း Connection ကို ပေါင်းခြင်း
+            total_conn=$(($s_ssh + $s_drop + $s_ovpn))
+            
+            # သတ်မှတ်ထားတဲ့ Limit ထက် ကျော်နေရင် ဖြတ်ချမယ်
+            if [[ "$total_conn" -gt "$limit" ]]; then
+                # သုံးနေတဲ့ User ရဲ့ Connection တွေကို အကုန် Kill မယ် (သော့ပြုတ်သွားအောင်)
+                pkill -u $user sshd > /dev/null 2>&1
+                pkill -u $user dropbear > /dev/null 2>&1
+                # User ကို သတိပေးတဲ့အနေနဲ့ ခဏတာ ဖြုတ်ချတာပါ၊ ပြန်ချိတ်ရင် Limit ထဲမှာပဲ ရပါမယ်။
+            fi
+        fi
+    done < "$database"
 done
