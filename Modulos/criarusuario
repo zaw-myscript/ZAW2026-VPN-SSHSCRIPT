@@ -34,33 +34,33 @@ fun_geraovpn() {
 } >/dev/null 2>&1
 
 clear
-echo -e "\E[44;1;37m           CRIAR USUARIO SSH           \E[0m"
+echo -e "\E[44;1;37m           CREATE SSH USER           \E[0m"
 echo ""
-echo -ne "\033[1;32mInforme o Nome: \033[1;37m"; read nome
+echo -ne "\033[1;32m◈ Username    : \033[1;37m"; read nome
 while [[ -z $nome ]]; do
-    echo -e "\n\033[1;31mNome Invalido!\033[0m"
-    echo -ne "\033[1;32mInforme o Nome: \033[1;37m"; read nome
+    echo -e "\n\033[1;31mInvalid Username!\033[0m"
+    echo -ne "\033[1;32m◈ Username    : \033[1;37m"; read nome
 done
-echo -ne "\033[1;32mInforme a Senha: \033[1;37m"; read senha
+echo -ne "\033[1;32m◈ Password    : \033[1;37m"; read senha
 while [[ -z $senha ]]; do
-    echo -e "\n\033[1;31mSenha Invalida!\033[0m"
-    echo -ne "\033[1;32mInforme a Senha: \033[1;37m"; read senha
+    echo -e "\n\033[1;31mInvalid Password!\033[0m"
+    echo -ne "\033[1;32m◈ Password    : \033[1;37m"; read senha
 done
-echo -ne "\033[1;32mInforme o Limite de Conexoes: \033[1;37m"; read limite
+echo -ne "\033[1;32m◈ Login Limit : \033[1;37m"; read limite
 while [[ -z $limite ]] || [[ ! $limite =~ ^[0-9]+$ ]]; do
-    echo -e "\n\033[1;31mLimite Invalido!\033[0m"
-    echo -ne "\033[1;32mInforme o Limite de Conexoes: \033[1;37m"; read limite
+    echo -e "\n\033[1;31mInvalid Limit!\033[0m"
+    echo -ne "\033[1;32m◈ Login Limit : \033[1;37m"; read limite
 done
-echo -ne "\033[1;32mInforme os Dias de Validade: \033[1;37m"; read dias
+echo -ne "\033[1;32m◈ Expire Days : \033[1;37m"; read dias
 while [[ -z $dias ]] || [[ ! $dias =~ ^[0-9]+$ ]]; do
-    echo -e "\n\033[1;31mDias Invalidos!\033[0m"
-    echo -ne "\033[1;32mInforme os Dias de Validade: \033[1;37m"; read dias
+    echo -e "\n\033[1;31mInvalid Days!\033[0m"
+    echo -ne "\033[1;32m◈ Expire Days : \033[1;37m"; read dias
 done
 
 validade=$(date '+%C%y-%m-%d' -d " +$dias days")
 validade2=$(date '+%d/%m/%Y' -d " +$dias days")
 
-echo -e "\n\033[1;33mCRIANDO USUARIO $nome...\033[0m"
+echo -e "\n\033[1;33mCREATING USER $nome...\033[0m"
 useradd -M -s /bin/false -e $validade $nome > /dev/null 2>&1
 echo "$nome:$senha" | chpasswd > /dev/null 2>&1
 echo "$nome $limite" >> /root/usuarios.db
