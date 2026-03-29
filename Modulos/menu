@@ -226,7 +226,7 @@ _userexp=$(printf '%-5s' "$_expuser")
 _tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 clear
 echo -e "\033[1;36m╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\033[0m"
-echo -e "\033[1;36m┃\E[44;1;37m       ✦ SSHPLUS MANAGER Edit:@kiritosshxd ✦      \E[0m\033[1;36m┃\033[0m"
+echo -e "\033[1;36m┃\033[1;35m  ✦ \E[44;1;37m        ZAW SSH MANAGER Edit:@Zaw-Ssh-Script       \E[0m\033[1;35m✦  \033[1;36m┃\033[0m"
 echo -e "\033[1;36m┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫\033[0m"
 echo -e "\033[1;36m┃ \033[1;33mOS:\033[1;37m $_system \033[1;33mRAM:\033[1;37m $_ram \033[1;33mCPU:\033[1;37m $_core\033[0m"
 echo -e "\033[1;36m┃ \033[1;33mHora:\033[1;37m $_hora     \033[1;33mUso:\033[1;37m $_usor \033[1;33mUso:\033[1;37m $_usop\033[0m"
@@ -346,7 +346,7 @@ _userexp=$(printf '%-5s' "$_expuser")
 _tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 clear
 echo -e "\033[1;36m╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\033[0m"
-echo -e "\033[1;36m┃\E[44;1;37m       ✦ SSHPLUS MANAGER Edit:@kiritosshxd ✦      \E[0m\033[1;36m┃\033[0m"
+echo -e "\033[1;36m┃\033[1;35m  ✦ \E[44;1;37m        ZAW SSH MANAGER Edit:@Zaw-Ssh-Script       \E[0m\033[1;35m✦  \033[1;36m┃\033[0m"
 echo -e "\033[1;36m┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫\033[0m"
 echo -e "\033[1;36m┃ \033[1;33mOS:\033[1;37m $_system \033[1;33mRAM:\033[1;37m $_ram \033[1;33mCPU:\033[1;37m $_core\033[0m"
 echo -e "\033[1;36m┃ \033[1;33mHora:\033[1;37m $_hora     \033[1;33mUso:\033[1;37m $_usor \033[1;33mUso:\033[1;37m $_usop\033[0m"
