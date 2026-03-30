@@ -319,11 +319,45 @@ case "$x" in
    echo -ne "\033[1;32m◈ Username    : \033[1;37m"; read nome
    echo -ne "\033[1;32m◈ Password    : \033[1;37m"; read senha
    echo -ne "\033[1;32m◈ Expire Days : \033[1;37m"; read dias
-   validade=$(date '+%C%y-%m-%d' -d " +$dias days")
-   validade2=$(date '+%d/%m/%Y' -d " +$dias days")
-   useradd -M -s /bin/false -e $validade $nome > /dev/null 2>&1
+   
+   useradd -M -s /bin/false "$nome" > /dev/null 2>&1
    echo "$nome:$senha" | chpasswd > /dev/null 2>&1
-   echo -e "\n\033[1;32m✅ ZiVPN UDP Account Created!\033[0m"
+   
+   python3 -c "
+import json, sys
+from datetime import datetime, timedelta
+user = '$nome'; password = '$senha'; days = int('$dias')
+expires = (datetime.now() + timedelta(days=days)).strftime('%Y-%m-%d')
+ufile = '/etc/zivpn/users.json'; cfile = '/etc/zivpn/config.json'
+try:
+    with open(ufile, 'r') as f: users = json.load(f)
+except: users = []
+replaced = False
+for u in users:
+    if u.get('user','').lower() == user.lower():
+        u['password'] = password; u['expires'] = expires; replaced = True; break
+if not replaced: users.append({'user':user, 'password':password, 'expires':expires})
+with open(ufile, 'w') as f: json.dump(users, f, indent=2)
+
+try:
+    with open(cfile, 'r') as f: cfg = json.load(f)
+except: cfg = {}
+valid = set()
+for u in users:
+    exp = u.get('expires'); is_valid = True
+    if exp:
+        try:
+            if datetime.strptime(exp, '%Y-%m-%d').date() < datetime.now().date(): is_valid = False
+        except: pass
+    if is_valid and u.get('password'): valid.add(str(u['password']))
+if 'auth' not in cfg or not type(cfg['auth']) is dict: cfg['auth'] = {}
+cfg['auth']['mode'] = 'passwords'
+cfg['auth']['config'] = sorted(list(valid))
+with open(cfile, 'w') as f: json.dump(cfg, f, indent=2)
+"
+   systemctl restart zivpn.service > /dev/null 2>&1
+   validade2=$(date '+%d/%m/%Y' -d " +$dias days")
+   echo -e "\n\033[1;32m✅ ZiVPN UDP Account Created & Key Synced!\033[0m"
    echo -e "\033[1;33m◈ Username : $nome\033[0m"
    echo -e "\033[1;33m◈ Password : $senha\033[0m"
    echo -e "\033[1;33m◈ Expire   : $validade2\033[0m"
@@ -386,7 +420,13 @@ echo -e "\033[1;36m┃ \033[1;33mIP:\033[1;37m $_ip_pad   \033[1;33mServer:\033[
 echo -e "\033[1;36m┃ \033[1;33mOS:\033[1;37m $_system \033[1;33mRAM:\033[1;37m $_ram \033[1;33mCPU:\033[1;37m $_core\033[0m"
 echo -e "\033[1;36m┃ \033[1;33mHora:\033[1;37m $_hora     \033[1;33mUso:\033[1;37m $_usor \033[1;33mUso:\033[1;37m $_usop\033[0m"
 echo -e "\033[1;36m┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫\033[0m"
-echo -e "\033[1;36m┃ \033[1;32m🟢 On:\033[1;37m $_onlin    \033[1;31m🔴 Exp:\033[1;37m $_userexp   \033[1;34m🔵 Tot:\033[1;37m $_tuser\033[0m"
+[[ ! -e /tmp/att ]]  && {
+    echo -e "\033[1;36m┃ \033[1;32m🟢 On:\033[1;37m $_onlin    \033[1;31m🔴 Exp:\033[1;37m $_userexp   \033[1;34m🔵 Tot:\033[1;37m $_tuser\033[0m"
+    var01='\033[1;32m◈'
+} || {
+    echo -e "\033[1;36m┃ \033[1;33m[!] \033[1;32mEXISTE UMA ATUALIZACAO DISPONIVEL \033[1;33m[!]\033[0m"
+    var01="\033[1;31m⚠️"
+}
 echo -e "\033[1;36m╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\033[0m"
 echo ""
 echo -e "\033[1;35m[\033[1;36m01\033[1;35m] \033[1;32m◈ \033[1;37mCRIAR USUARIO          \033[1;35m[\033[1;36m11\033[1;35m] \033[1;32m◈ \033[1;37mSPEEDTEST"
