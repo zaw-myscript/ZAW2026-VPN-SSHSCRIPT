@@ -191,6 +191,58 @@ function autoexec () {
    fi
 
 }
+
+# === ZIVPN AUTO SYNC FUNCTION ===
+function sync_zivpn () {
+   echo -e "\n\033[1;33m[!] Syncing ZIVPN Data...\033[0m"
+   python3 -c "
+import json, pwd, subprocess, datetime
+ufile = '/etc/zivpn/users.json'; cfile = '/etc/zivpn/config.json'
+try:
+    with open(ufile, 'r') as f: users = json.load(f)
+except: users = []
+new_users = []; changed = False
+for u in users:
+    username = u.get('user', '')
+    try:
+        pwd.getpwnam(username)
+        out = subprocess.check_output(['env', 'LANG=C', 'chage', '-l', username]).decode()
+        exp_date_str = ''
+        for line in out.split('\n'):
+            if line.startswith('Account expires'):
+                val = line.split(':', 1)[1].strip()
+                if val != 'never':
+                    try:
+                        dt = datetime.datetime.strptime(val, '%b %d, %Y')
+                        exp_date_str = dt.strftime('%Y-%m-%d')
+                    except: pass
+        if exp_date_str and exp_date_str != u.get('expires'):
+            u['expires'] = exp_date_str
+            changed = True
+        new_users.append(u)
+    except KeyError:
+        changed = True
+if changed:
+    with open(ufile, 'w') as f: json.dump(new_users, f, indent=2)
+    try:
+        with open(cfile, 'r') as f: cfg = json.load(f)
+    except: cfg = {}
+    valid = set()
+    for u in new_users:
+        exp = u.get('expires'); is_valid = True
+        if exp:
+            try:
+                if datetime.datetime.strptime(exp, '%Y-%m-%d').date() < datetime.datetime.now().date(): is_valid = False
+            except: pass
+        if is_valid and u.get('password'): valid.add(str(u['password']))
+    if 'auth' not in cfg or not type(cfg['auth']) is dict: cfg['auth'] = {}
+    cfg['auth']['mode'] = 'passwords'
+    cfg['auth']['config'] = sorted(list(valid))
+    with open(cfile, 'w') as f: json.dump(cfg, f, indent=2)
+    subprocess.run(['systemctl', 'restart', 'zivpn.service'])
+" > /dev/null 2>&1
+}
+
 #menu2
 menu2 (){
 [[ -e /etc/Plus-torrent ]] && stsf=$(echo -e "\033[1;32m◉ ") || stsf=$(echo -e "\033[1;31m○ ")
@@ -458,6 +510,7 @@ case "$x" in
    3 | 03)
    clear
    remover
+   sync_zivpn
    sleep 3
    ;;
    4 | 04)
@@ -468,6 +521,7 @@ case "$x" in
    5 | 05)
    clear
    mudardata
+   sync_zivpn
    sleep 3
    ;;
    6 | 06)
@@ -483,6 +537,7 @@ case "$x" in
    8 | 08)
    clear
    expcleaner
+   sync_zivpn
    echo ""
    sleep 3
    ;;     
