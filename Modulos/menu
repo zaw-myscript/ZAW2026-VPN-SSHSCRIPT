@@ -429,6 +429,8 @@ with open(cfile, 'w') as f: json.dump(cfg, f, indent=2)
    if [[ ! -f /usr/local/bin/xray ]]; then
        echo -e "\n\033[1;33m[!] Installing Xray Core... Please wait (Only for the first time)...\033[0m"
        bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install > /dev/null 2>&1
+       
+       mkdir -p /usr/local/etc/xray
        cat <<EOF > /usr/local/etc/xray/config.json
 {
   "inbounds": [
@@ -449,8 +451,13 @@ with open(cfile, 'w') as f: json.dump(cfg, f, indent=2)
 }
 EOF
        systemctl enable xray > /dev/null 2>&1
-       systemctl restart xray > /dev/null 2>&1
    fi
+   
+   # Auto Open Ports in Firewall
+   iptables -I INPUT -p tcp --dport 8880 -j ACCEPT > /dev/null 2>&1
+   iptables -I INPUT -p tcp --dport 8881 -j ACCEPT > /dev/null 2>&1
+   ufw allow 8880/tcp > /dev/null 2>&1
+   ufw allow 8881/tcp > /dev/null 2>&1
    
    UUID=$(cat /proc/sys/kernel/random/uuid)
    python3 -c "
@@ -471,7 +478,7 @@ with open(cfile, 'w') as f: json.dump(cfg, f, indent=2)
    validade2=$(date '+%d/%m/%Y' -d " +$dias days")
    
    VLESS_LINK="vless://${UUID}@${IP}:8880?type=ws&security=none&path=%2Fvless#${nome}"
-   VMESS_JSON="{\"v\":\"2\",\"ps\":\"${nome}\",\"add\":\"${IP}\",\"port\":\"8881\",\"id\":\"${UUID}\",\"aid\":\"0\",\"net\":\"ws\",\"type\":\"none\",\"host\":\"\",\"path\":\"/vmess\",\"tls\":\"\"}"
+   VMESS_JSON="{\"v\":\"2\",\"ps\":\"${nome}\",\"add\":\"${IP}\",\"port\":\"8881\",\"id\":\"${UUID}\",\"aid\":\"0\",\"net\":\"ws\",\"type\":\"none\",\"host\":\"${IP}\",\"path\":\"/vmess\",\"tls\":\"\"}"
    VMESS_LINK="vmess://$(echo -n "$VMESS_JSON" | base64 -w 0)"
    
    echo -e "\n\033[1;32m✅ XRAY (VMESS / VLESS) Account Created!\033[0m"
