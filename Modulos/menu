@@ -508,10 +508,10 @@ with open(cfile, 'w') as f: json.dump(cfg, f, indent=2)
    *)
    echo -e "\n\033[1;31mOpcao invalida !\033[0m"
    sleep 2
-   ;;
 esac
 }
-while [[ "$x" != "ok" ]]; do
+while true $x != "ok"
+do
 stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
 stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
@@ -689,7 +689,6 @@ case "$x" in
    *)
    echo -e "\n\033[1;31mOpcao invalida !\033[0m"
    sleep 2
-   ;;
 esac
 done
 }
