@@ -7,11 +7,13 @@ if [ "$(whoami)" != "root" ]; then
 fi
 
 # ==========================================================
-# Ubuntu 20, 22, 24 အားလုံးအတွက် လိုအပ်သော Packages နှင့် Domain တောင်းသည့်စနစ် (ZAW UPDATE)
+# Ubuntu 20, 22, 24 အတွက် Websocket Port အလိုလိုပွင့်ရန် Python Fix နှင့် Domain တောင်းသည့်စနစ်
 # ==========================================================
-echo -e "\033[1;33m[!] Installing Required Packages for Ubuntu 20/22/24...\033[0m"
+echo -e "\033[1;33m[!] Installing Python Fix for Websocket (Ubuntu 20/22/24)...\033[0m"
 apt-get update -y > /dev/null 2>&1
-apt-get install -y python3 python-is-python3 screen dos2unix net-tools > /dev/null 2>&1
+apt-get install -y python2 python3 screen dos2unix net-tools > /dev/null 2>&1
+rm -rf /usr/bin/python
+ln -s /usr/bin/python2 /usr/bin/python
 
 clear
 echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
