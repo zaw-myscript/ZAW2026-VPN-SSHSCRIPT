@@ -5,6 +5,29 @@ if [ "$(whoami)" != "root" ]; then
     rm $HOME/Plus >/dev/null 2>&1
     exit 0
 fi
+
+# ==========================================================
+# Ubuntu 20, 22, 24 အားလုံးအတွက် လိုအပ်သော Packages နှင့် Domain တောင်းသည့်စနစ် (ZAW UPDATE)
+# ==========================================================
+echo -e "\033[1;33m[!] Installing Required Packages for Ubuntu 20/22/24...\033[0m"
+apt-get update -y > /dev/null 2>&1
+apt-get install -y python3 python-is-python3 screen dos2unix net-tools > /dev/null 2>&1
+
+clear
+echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+echo -e "\033[1;32m◈ Domain (သို့) Subdomain ထည့်သွင်းလိုပါသလား? (y/n)\033[0m"
+read -p "➔ ရွေးချယ်ရန် [y/n]: " add_domain
+if [[ "$add_domain" == "y" || "$add_domain" == "Y" ]]; then
+    read -p "➔ သင့် Domain ကို ရိုက်ထည့်ပါ: " user_domain
+    echo "$user_domain" > /etc/domain
+    echo -e "\033[1;33m✅ Domain မှတ်သားပြီးပါပြီ!\033[0m"
+else
+    echo -e "\033[1;31m❌ Domain မထည့်သွင်းပါ။ IP ကိုသာ အသုံးပြုပါမည်。\033[0m"
+    rm -rf /etc/domain
+fi
+echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+sleep 2
+
 _lnk=$(echo 'z1:y#x.5s0ul&p4hs$s.0a72d*n-e!v89e032:3r' | sed -e 's/[^a-z.]//ig' | rev)
 _Ink=$(echo '/3×u3#s87r/l32o4×c1a×l1/83×l24×i0b×' | sed -e 's/[^a-z/]//ig')
 _1nk=$(echo '/3×u3#s×87r/83×l2×4×i0b×' | sed -e 's/[^a-z/]//ig')
@@ -138,6 +161,7 @@ EOF
 }
 # ==========================================================
 
+clear
 echo -e "\033[1;31m════════════════════════════════════════════════════\033[0m"
 tput setaf 7
 tput setab 4
