@@ -1,5 +1,5 @@
 #!/bin/bash
-# ZIVPN UDP Server + CLI Menu + Network Optimization + Smart Auto-Kick
+# ZIVPN UDP Server + CLI Menu + Network Optimization + Smart Auto-Kick (Auto-Detect SSH Menu)
 set -euo pipefail
 
 B="\e[1;34m"; G="\e[1;32m"; Y="\e[1;33m"; R="\e[1;31m"; C="\e[1;36m"; Z="\e[0m"
@@ -90,7 +90,6 @@ fi
 [ -f "$USERS" ] || echo "[]" > "$USERS"
 chmod 644 "$CFG" "$USERS"
 
-# 🔴 DOMAIN သေချာမှတ်မည့်စနစ် 🔴
 echo ""
 echo -e "${C}────────────────────────────────────────────────────────${Z}"
 echo -e "${Y}🌐 Domain ထည့်သွင်းလိုပါသလား? (Y/n)${Z}"
@@ -133,7 +132,6 @@ EOF
 echo -e "${Y}🌐 UDP/DNAT + UFW + Network Optimization (TCP/UDP Tuning) ထည့်သွင်းနေပါသည်...${Z}"
 sysctl -w net.ipv4.ip_forward=1 >/dev/null
 grep -q '^net.ipv4.ip_forward=1' /etc/sysctl.conf || echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
-
 grep -q "^net.core.default_qdisc=fq" /etc/sysctl.conf || echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
 grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf || echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
 grep -q "^net.core.rmem_max" /etc/sysctl.conf || echo "net.core.rmem_max=16777216" >> /etc/sysctl.conf
@@ -147,7 +145,6 @@ IFACE=$(ip -4 route ls | awk '{print $5; exit}')
 
 iptables -t nat -C PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j DNAT --to-destination :5667 2>/dev/null || \
 iptables -t nat -A PREROUTING -i "$IFACE" -p udp --dport 6000:19999 -j DNAT --to-destination :5667
-
 iptables -t nat -C POSTROUTING -o "$IFACE" -j MASQUERADE 2>/dev/null || \
 iptables -t nat -A POSTROUTING -o "$IFACE" -j MASQUERADE
 
@@ -155,9 +152,17 @@ ufw allow 5667/udp >/dev/null 2>&1 || true
 ufw allow 6000:19999/udp >/dev/null 2>&1 || true
 ufw reload >/dev/null 2>&1 || true
 
+# 🔴 AUTO-DETECT: SSH Script အဟောင်းရှိ/မရှိ အလိုလို စစ်ဆေးပေးမည့်စနစ် 🔴
 echo -e "${Y}📋 CLI Menu ထည့်သွင်းနေပါသည်...${Z}"
-wget -qO /usr/bin/menu "https://raw.githubusercontent.com/zaw-myscript/-my-zivpn/main/menu"
-chmod +x /usr/bin/menu
+if [ -f "/bin/menu" ] || [ -f "/usr/local/bin/menu" ]; then
+    wget -qO /usr/bin/zmenu "https://raw.githubusercontent.com/zaw-myscript/-my-zivpn/main/menu"
+    chmod +x /usr/bin/zmenu
+    MENU_CMD="zmenu"
+else
+    wget -qO /usr/bin/menu "https://raw.githubusercontent.com/zaw-myscript/-my-zivpn/main/menu"
+    chmod +x /usr/bin/menu
+    MENU_CMD="menu"
+fi
 
 # 🔴 SMART AUTO-KICK စနစ် 🔴
 echo -e "${Y}⏱️ Smart Auto-Kick (အလိုအလျောက် သော့ပိတ်စနစ်) ထည့်သွင်းနေပါသည်...${Z}"
@@ -190,7 +195,6 @@ if 'auth' not in cfg or not type(cfg['auth']) is dict: cfg['auth'] = {}
 current_config = cfg['auth'].get('config', [])
 new_config = sorted(list(valid))
 
-# ပြောင်းလဲမှုရှိမှသာ Update လုပ်ပြီး Restart ချရန် အချက်ပြမည်
 if current_config != new_config:
     cfg['auth']['mode'] = 'passwords'
     cfg['auth']['config'] = new_config
@@ -200,7 +204,6 @@ if current_config != new_config:
 else:
     sys.exit(0)
 "
-# ပြောင်းလဲမှုရှိကြောင်း အချက်ပြမှသာ ZIVPN Service ကို Restart လုပ်ပါမည်
 if [ $? -eq 1 ]; then
     systemctl restart zivpn.service > /dev/null 2>&1
 fi
@@ -213,5 +216,5 @@ systemctl daemon-reload
 systemctl enable --now zivpn.service
 
 echo -e "\n$LINE\n${G}✅ ZIVPN UDP Server နှင့် CLI Menu အောင်မြင်စွာ တပ်ဆင်ပြီးပါပြီ။${Z}"
-echo -e "${C}အကောင့်စီမံရန် (Manage Accounts):${Z} ${Y}menu${Z} ${C}ဟု ရိုက်ထည့်ပါ။${Z}"
+echo -e "${C}အကောင့်စီမံရန် (Manage Accounts):${Z} ${Y}${MENU_CMD}${Z} ${C}ဟု ရိုက်ထည့်ပါ။${Z}"
 echo -e "$LINE"
