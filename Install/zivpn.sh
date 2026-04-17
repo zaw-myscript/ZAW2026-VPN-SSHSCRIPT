@@ -1,12 +1,12 @@
 #!/bin/bash
-# ZIVPN UDP Server + CLI Menu + Network Optimization + Smart Auto-Kick (Auto-Detect SSH Menu)
+# ZIVPN UDP Server + CLI Menu + Anti-Drop Network Optimization + DNS (No Auto-Kick)
 set -euo pipefail
 
 B="\e[1;34m"; G="\e[1;32m"; Y="\e[1;33m"; R="\e[1;31m"; C="\e[1;36m"; Z="\e[0m"
 LINE="${B}────────────────────────────────────────────────────────${Z}"
 say(){ 
     echo -e "\n$LINE"
-    echo -e "${G}ZIVPN UDP Server + Standalone CLI Menu + Network Optimization${Z}"
+    echo -e "${G}ZIVPN UDP Server + Anti-Drop Optimization + ZAWDNS${Z}"
     echo -e "$LINE\n"
 }
 say 
@@ -46,7 +46,7 @@ apt_guard_end(){
 echo -e "${Y}📦 Packages များ တင်သွင်းနေပါသည်...${Z}"
 apt_guard_start
 apt-get update -y -o APT::Update::Post-Invoke-Success::= -o APT::Update::Post-Invoke::= >/dev/null
-apt-get install -y curl ufw jq python3 iproute2 conntrack ca-certificates cron >/dev/null
+apt-get install -y curl ufw jq python3 iproute2 conntrack ca-certificates >/dev/null
 apt_guard_end
 
 systemctl stop zivpn.service 2>/dev/null || true
@@ -108,6 +108,10 @@ fi
 echo -e "${C}────────────────────────────────────────────────────────${Z}"
 echo ""
 
+# 🔴 Auto-Kick အဟောင်းများကို လုံးဝ ရှင်းလင်းခြင်း 🔴
+crontab -l 2>/dev/null | grep -v "zivpn_autokick.sh" | crontab - || true
+rm -f /usr/local/bin/zivpn_autokick.sh
+
 cat >/etc/systemd/system/zivpn.service <<'EOF'
 [Unit]
 Description=ZIVPN UDP Server
@@ -120,6 +124,7 @@ WorkingDirectory=/etc/zivpn
 ExecStart=/usr/local/bin/zivpn server -c /etc/zivpn/config.json
 Restart=always
 RestartSec=3
+LimitNOFILE=655350
 Environment=ZIVPN_LOG_LEVEL=info
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
@@ -129,15 +134,27 @@ NoNewPrivileges=true
 WantedBy=multi-user.target
 EOF
 
-echo -e "${Y}🌐 UDP/DNAT + UFW + Network Optimization (TCP/UDP Tuning) ထည့်သွင်းနေပါသည်...${Z}"
-sysctl -w net.ipv4.ip_forward=1 >/dev/null
-grep -q '^net.ipv4.ip_forward=1' /etc/sysctl.conf || echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
-grep -q "^net.core.default_qdisc=fq" /etc/sysctl.conf || echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
-grep -q "^net.ipv4.tcp_congestion_control=bbr" /etc/sysctl.conf || echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-grep -q "^net.core.rmem_max" /etc/sysctl.conf || echo "net.core.rmem_max=16777216" >> /etc/sysctl.conf
-grep -q "^net.core.wmem_max" /etc/sysctl.conf || echo "net.core.wmem_max=16777216" >> /etc/sysctl.conf
-grep -q "^net.core.rmem_default" /etc/sysctl.conf || echo "net.core.rmem_default=1048576" >> /etc/sysctl.conf
-grep -q "^net.core.wmem_default" /etc/sysctl.conf || echo "net.core.wmem_default=1048576" >> /etc/sysctl.conf
+echo -e "${Y}🌐 UDP Anti-Drop + Network Optimization ထည့်သွင်းနေပါသည်...${Z}"
+modprobe nf_conntrack >/dev/null 2>&1 || true
+
+sed -i '/net.ipv4.ip_forward/d' /etc/sysctl.conf
+sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
+sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf
+sed -i '/net.core.rmem_max/d' /etc/sysctl.conf
+sed -i '/net.core.wmem_max/d' /etc/sysctl.conf
+sed -i '/nf_conntrack_udp_timeout/d' /etc/sysctl.conf
+sed -i '/nf_conntrack_tcp_timeout_established/d' /etc/sysctl.conf
+
+cat >> /etc/sysctl.conf << 'EOF'
+net.ipv4.ip_forward=1
+net.core.default_qdisc=fq
+net.ipv4.tcp_congestion_control=bbr
+net.core.rmem_max=16777216
+net.core.wmem_max=16777216
+net.netfilter.nf_conntrack_udp_timeout = 120
+net.netfilter.nf_conntrack_udp_timeout_stream = 300
+net.netfilter.nf_conntrack_tcp_timeout_established = 86400
+EOF
 sysctl -p >/dev/null 2>&1
 
 IFACE=$(ip -4 route ls | awk '{print $5; exit}')
@@ -152,6 +169,55 @@ ufw allow 5667/udp >/dev/null 2>&1 || true
 ufw allow 6000:19999/udp >/dev/null 2>&1 || true
 ufw reload >/dev/null 2>&1 || true
 
+# 🔴 ZAWDNS ထည့်သွင်းခြင်း 🔴
+echo -e "${Y}🚀 ZAWDNS (DNS Optimizer) ထည့်သွင်းနေပါသည်...${Z}"
+cat > /usr/local/bin/zawdns << 'EOF'
+#!/bin/bash
+change_dns() {
+    echo -e "\n\033[1;33m[*] DNS ကို $3 သို့ ပြောင်းလဲနေပါသည်...\033[0m"
+    if [ -f /etc/systemd/resolved.conf ]; then
+        sed -i '/^DNS=/d' /etc/systemd/resolved.conf 2>/dev/null
+        echo "DNS=$1 $2" >> /etc/systemd/resolved.conf
+        systemctl restart systemd-resolved 2>/dev/null
+    fi
+    rm -f /etc/resolv.conf
+    echo "nameserver $1" > /etc/resolv.conf
+    echo "nameserver $2" >> /etc/resolv.conf
+    echo -e "\033[1;32m✅ အောင်မြင်ပါသည်။ ဆာဗာ၏ လမ်းကြောင်းကို $3 DNS သို့ ပြောင်းလဲပြီးပါပြီ!\033[0m"
+    sleep 2
+}
+default_dns() {
+    echo -e "\n\033[1;33m[*] မူလ Default DNS သို့ ပြန်လည်ပြောင်းလဲနေပါသည်...\033[0m"
+    rm -f /etc/resolv.conf
+    ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf 2>/dev/null || echo "nameserver 8.8.8.8" > /etc/resolv.conf
+    systemctl restart systemd-resolved 2>/dev/null
+    echo -e "\033[1;32m✅ မူလအတိုင်း ပြန်ထားပြီးပါပြီ!\033[0m"
+    sleep 2
+}
+while true; do
+    clear
+    echo -e "\033[1;32m          ZAW-VPN NETWORK & DNS OPTIMIZER (PRO)              \033[0m"
+    echo -e "\033[1;35m==============================================================\033[0m"
+    echo -e " \033[1;36mသင့်ဆာဗာလိုင်းကို အငြိမ်ဆုံးဖြစ်အောင် အောက်ပါ DNS များ ရွေးချယ်နိုင်သည်\033[0m\n"
+    echo -e "   \033[1;33m[1]\033[0m 🚀 Cloudflare DNS \033[1;36m(1.1.1.1)\033[0m  - \033[1;32mဂိမ်းဆော့/လိုင်းဖောက်ရန် အငြိမ်ဆုံး\033[0m"
+    echo -e "   \033[1;33m[2]\033[0m 🌐 Google DNS     \033[1;36m(8.8.8.8)\033[0m  - \033[1;32mလူသုံးအများဆုံးနှင့် ယုံကြည်ရဆုံး\033[0m"
+    echo -e "   \033[1;33m[3]\033[0m 🛡️ AdGuard DNS    \033[1;36m(94.140.x)\033[0m - \033[1;32mကြော်ငြာများကို အလိုအလျောက်ပိတ်ရန်\033[0m"
+    echo -e "   \033[1;33m[4]\033[0m 🔄 မူလ DNS သို့ ပြန်ထားရန်     - \033[1;32mDefault သို့ပြန်သွားရန်\033[0m"
+    echo -e "   \033[1;33m[0]\033[0m ❌ ထွက်မည် \033[1;31m(Exit)\033[0m"
+    echo -e "\033[1;35m==============================================================\033[0m"
+    read -p " နှိပ်လိုသော နံပါတ်ကို ရွေးချယ်ပါ (0-4): " option
+    case $option in
+        1) change_dns "1.1.1.1" "1.0.0.1" "Cloudflare" ;;
+        2) change_dns "8.8.8.8" "8.8.4.4" "Google" ;;
+        3) change_dns "94.140.14.14" "94.140.15.15" "AdGuard" ;;
+        4) default_dns ;;
+        0) echo -e "\033[1;32mကျေးဇူးတင်ပါသည် ZAW-VPN ကို အသုံးပြုတဲ့အတွက်!\033[0m"; break ;;
+        *) echo -e "\033[1;31m❌ နံပါတ်မှားယွင်းနေပါသည်။ ပြန်ရွေးချယ်ပါ။\033[0m"; sleep 1 ;;
+    esac
+done
+EOF
+chmod +x /usr/local/bin/zawdns
+
 # 🔴 AUTO-DETECT: SSH Script အဟောင်းရှိ/မရှိ အလိုလို စစ်ဆေးပေးမည့်စနစ် 🔴
 echo -e "${Y}📋 CLI Menu ထည့်သွင်းနေပါသည်...${Z}"
 if [ -f "/bin/menu" ] || [ -f "/usr/local/bin/menu" ]; then
@@ -164,57 +230,10 @@ else
     MENU_CMD="menu"
 fi
 
-# 🔴 SMART AUTO-KICK စနစ် 🔴
-echo -e "${Y}⏱️ Smart Auto-Kick (အလိုအလျောက် သော့ပိတ်စနစ်) ထည့်သွင်းနေပါသည်...${Z}"
-cat > /usr/local/bin/zivpn_autokick.sh << 'EOF'
-#!/bin/bash
-python3 -c "
-import json, sys, os
-from datetime import datetime
-ufile = '/etc/zivpn/users.json'
-cfile = '/etc/zivpn/config.json'
-try:
-    with open(ufile, 'r') as f: users = json.load(f)
-except: sys.exit(0)
-try:
-    with open(cfile, 'r') as f: cfg = json.load(f)
-except: cfg = {}
-
-valid = set()
-today = datetime.now().date()
-for u in users:
-    exp = u.get('expires')
-    is_valid = True
-    if exp:
-        try:
-            if datetime.strptime(exp.strip(), '%Y-%m-%d').date() < today: is_valid = False
-        except: pass
-    if is_valid and u.get('password'): valid.add(str(u['password']))
-
-if 'auth' not in cfg or not type(cfg['auth']) is dict: cfg['auth'] = {}
-current_config = cfg['auth'].get('config', [])
-new_config = sorted(list(valid))
-
-if current_config != new_config:
-    cfg['auth']['mode'] = 'passwords'
-    cfg['auth']['config'] = new_config
-    with open(cfile+'.tmp', 'w') as f: json.dump(cfg, f, indent=2)
-    os.rename(cfile+'.tmp', cfile)
-    sys.exit(1)
-else:
-    sys.exit(0)
-"
-if [ $? -eq 1 ]; then
-    systemctl restart zivpn.service > /dev/null 2>&1
-fi
-EOF
-chmod +x /usr/local/bin/zivpn_autokick.sh
-(crontab -l 2>/dev/null | grep -v "zivpn_autokick.sh" ; echo "0 * * * * /usr/local/bin/zivpn_autokick.sh") | crontab -
-/usr/local/bin/zivpn_autokick.sh
-
 systemctl daemon-reload
 systemctl enable --now zivpn.service
 
 echo -e "\n$LINE\n${G}✅ ZIVPN UDP Server နှင့် CLI Menu အောင်မြင်စွာ တပ်ဆင်ပြီးပါပြီ။${Z}"
 echo -e "${C}အကောင့်စီမံရန် (Manage Accounts):${Z} ${Y}${MENU_CMD}${Z} ${C}ဟု ရိုက်ထည့်ပါ။${Z}"
+echo -e "${C}DNS ပြောင်းရန် (Change DNS):${Z} ${Y}zawdns${Z} ${C}ဟု ရိုက်ထည့်ပါ။${Z}"
 echo -e "$LINE"
