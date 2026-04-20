@@ -83,21 +83,17 @@ rm -rf $HOME/speed
 }
 
 function limit1 () {
-   clear
-   echo -e "\n\033[1;32mINICIANDO O LIMITER... \033[0m\n"
+   clear; echo -e "\n\033[1;32mINICIANDO O LIMITER... \033[0m\n"
    fun_bar 'screen -dmS limiter limiter' 'sleep 3'
    [[ $(grep -wc "limiter" /etc/autostart) = '0' ]] && { echo -e "ps x | grep 'limiter' | grep -v 'grep' && echo 'ON' || screen -dmS limiter limiter" >> /etc/autostart; } || { sed -i '/limiter/d' /etc/autostart; echo -e "ps x | grep 'limiter' | grep -v 'grep' && echo 'ON' || screen -dmS limiter limiter" >> /etc/autostart; }
-   echo -e "\n\033[1;32m  LIMITER ATIVO !\033[0m"
-   sleep 3
+   echo -e "\n\033[1;32m  LIMITER ATIVO !\033[0m"; sleep 3
 }
 
 function limit2 () {
-   clear
-   echo -e "\033[1;32mPARANDO O LIMITER... \033[0m\n"
+   clear; echo -e "\033[1;32mPARANDO O LIMITER... \033[0m\n"
    fun_stplimiter () { sleep 1; screen -r -S "limiter" -X quit; screen -wipe 1>/dev/null 2>/dev/null; [[ $(grep -wc "limiter" /etc/autostart) != '0' ]] && { sed -i '/limiter/d' /etc/autostart; }; sleep 1; }
    fun_bar 'fun_stplimiter' 'sleep 3'
-   echo -e "\n\033[1;31m LIMITER PARADO !\033[0m"
-   sleep 3
+   echo -e "\n\033[1;31m LIMITER PARADO !\033[0m"; sleep 3
 }
 
 function limit_ssh () {
@@ -146,9 +142,9 @@ function mudar_dns () {
 
 menu () {
 while true; do
-stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[1;32m🟢 ON " || echo -e "\033[1;31m🔴 OFF")
-stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[1;32m🟢 ON " || echo -e "\033[1;31m🔴 OFF")
-autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[1;32m🟢 ON " || echo -e "\033[1;31m🔴 OFF")
+stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[1;32m[ON]\033[0m" || echo -e "\033[1;31m[OFF]\033[0m")
+stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[1;32m[ON]\033[0m" || echo -e "\033[1;31m[OFF]\033[0m")
+autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[1;32m[ON]\033[0m" || echo -e "\033[1;31m[OFF]\033[0m")
 
 if [[ "$(grep -c "Ubuntu" /etc/issue.net)" = "1" ]]; then
 system=$(cut -d' ' -f1 /etc/issue.net); system+=$(echo ' '); system+=$(cut -d' ' -f2 /etc/issue.net |awk -F "." '{print $1}')
@@ -163,18 +159,29 @@ fi
 _country=$(cat /etc/vps_country)
 _ip_pad=$(printf '%-15s' "$IP")
 [[ -f /etc/domain ]] && _domain=$(cat /etc/domain) || _domain="No-Domain"
+
+# --- ONLINE COUNTER BUG FIX ---
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
+_ondrp=0
+if ps ax | grep -v grep | grep -q dropbear; then
+    _drp=$(ps aux | grep dropbear | grep -v grep | wc -l)
+    _ondrp=$((_drp - 1))
+    [[ $_ondrp -lt 0 ]] && _ondrp=0
+fi
+_onop=0
+[[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log)
+_onli=$((_ons + _onop + _ondrp))
+[[ $_onli -lt 0 ]] && _onli=0
+_onlin=$(printf '%-5s' "$_onli")
+# ------------------------------
+
 [[ "$(cat /etc/SSHPlus/Exp)" != "" ]] && _expuser=$(cat /etc/SSHPlus/Exp) || _expuser="0"
-[[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log) || _onop="0"
-[[ -e /etc/default/dropbear ]] && _drp=$(ps aux | grep dropbear | grep -v grep | wc -l); _ondrp=$(($_drp - 1)) || _ondrp="0"
-_onli=$(($_ons + $_onop + $_ondrp))
 _ram=$(printf ' %-9s' "$(free -h | grep -i mem | awk {'print $2'})")
 _usor=$(printf '%-8s' "$(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2 }')")
 _usop=$(printf '%-1s' "$(top -bn1 | awk '/Cpu/ { cpu = "" 100 - $8 "%" }; END { print cpu }')")
 _core=$(printf '%-1s' "$(grep -c cpu[0-9] /proc/stat)")
 _system=$(printf '%-14s' "$system")
 _hora=$(printf '%(%H:%M:%S)T')
-_onlin=$(printf '%-5s' "$_onli")
 _userexp=$(printf '%-5s' "$_expuser")
 _tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 
@@ -195,22 +202,22 @@ echo -e "\033[1;36m┣━━━━━━━━━━━━━━━━━━━�
 echo -e "\033[1;36m┃ \033[1;32m🟢 On:\033[1;37m $_onlin    \033[1;31m🔴 Exp:\033[1;37m $_userexp   \033[1;34m🔵 Tot:\033[1;37m $_tuser\033[0m"
 echo -e "\033[1;36m╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\033[0m\n"
 
-echo -e "\033[1;35m[\033[1;36m01\033[1;35m] \033[1;32m◈ \033[1;37mအကောင့်ဖန်တီးရန်      \033[1;35m[\033[1;36m12\033[1;35m] \033[1;32m◈ \033[1;37mIP Limiter $stsl"
-echo -e "\033[1;35m[\033[1;36m02\033[1;35m] \033[1;32m◈ \033[1;37mTest အကောင့်ဖန်တီးရန် \033[1;35m[\033[1;36m13\033[1;35m] \033[1;32m◈ \033[1;37mBadVPN (UDP) $stsu"
-echo -e "\033[1;35m[\033[1;36m03\033[1;35m] \033[1;32m◈ \033[1;37mအကောင့်ဖျက်ရန်      \033[1;35m[\033[1;36m14\033[1;35m] \033[1;32m◈ \033[1;37mPayload Host ထည့်ရန်"
-echo -e "\033[1;35m[\033[1;36m04\033[1;35m] \033[1;32m◈ \033[1;37mသက်တမ်းတိုးရန်      \033[1;35m[\033[1;36m15\033[1;35m] \033[1;32m◈ \033[1;37mPayload Host ဖျက်ရန်"
-echo -e "\033[1;35m[\033[1;36m05\033[1;35m] \033[1;32m◈ \033[1;37mLimit အလုံးရေပြင်ရန် \033[1;35m[\033[1;36m16\033[1;35m] \033[1;32m◈ \033[1;37mDNS အလွယ်ချိန်းရန်"
-echo -e "\033[1;35m[\033[1;36m06\033[1;35m] \033[1;32m◈ \033[1;37mPassword ပြင်ရန်   \033[1;35m[\033[1;36m17\033[1;35m] \033[1;32m◈ \033[1;37mSpeedtest စမ်းရန်"
-echo -e "\033[1;35m[\033[1;36m07\033[1;35m] \033[1;32m◈ \033[1;37mOnline စာရင်းစစ်ရန်  \033[1;35m[\033[1;36m18\033[1;35m] \033[1;32m◈ \033[1;37mSystem Optimize လုပ်ရန်"
-echo -e "\033[1;35m[\033[1;36m08\033[1;35m] \033[1;32m◈ \033[1;37mExpired အကောင့်ရှင်း \033[1;35m[\033[1;36m19\033[1;35m] \033[1;32m◈ \033[1;37mBackup & Restore"
-echo -e "\033[1;35m[\033[1;36m09\033[1;35m] \033[1;32m◈ \033[1;37mအကောင့်စာရင်းကြည့်ရန် \033[1;35m[\033[1;36m20\033[1;35m] \033[1;32m◈ \033[1;37mAuto Exec $autm"
-echo -e "\033[1;35m[\033[1;36m10\033[1;35m] \033[1;32m◈ \033[1;37mPorts (Modo Conexão)\033[1;35m[\033[1;36m21\033[1;35m] \033[1;32m◈ \033[1;37mRestart Services"
-echo -e "\033[1;35m[\033[1;36m11\033[1;35m] \033[1;32m◈ \033[1;37mVPS System Info    \033[1;35m[\033[1;36m22\033[1;35m] \033[1;32m◈ \033[1;37mReboot System"
-echo -e "                       \033[1;35m[\033[1;36m23\033[1;35m] \033[1;32m◈ \033[1;37mRoot Pass ပြောင်းရန်"
-echo -e "\033[1;35m[\033[1;36m00\033[1;35m] \033[1;32m◈ \033[1;31mထွက်မည် (SAIR)\033[0m"
+# PERFECTLY ALIGNED 2-COLUMN MENU
+echo -e "\033[1;35m[\033[1;36m01\033[1;35m] \033[1;32m◈ \033[1;37mCreate Account       \033[1;35m[\033[1;36m13\033[1;35m] \033[1;32m◈ \033[1;37mBadVPN (UDP)  $stsu"
+echo -e "\033[1;35m[\033[1;36m02\033[1;35m] \033[1;32m◈ \033[1;37mCreate Trial         \033[1;35m[\033[1;36m14\033[1;35m] \033[1;32m◈ \033[1;37mAdd Host / Payload"
+echo -e "\033[1;35m[\033[1;36m03\033[1;35m] \033[1;32m◈ \033[1;37mRemove Account       \033[1;35m[\033[1;36m15\033[1;35m] \033[1;32m◈ \033[1;37mDel Host / Payload"
+echo -e "\033[1;35m[\033[1;36m04\033[1;35m] \033[1;32m◈ \033[1;37mRenew Account        \033[1;35m[\033[1;36m16\033[1;35m] \033[1;32m◈ \033[1;37mChange DNS Settings"
+echo -e "\033[1;35m[\033[1;36m05\033[1;35m] \033[1;32m◈ \033[1;37mChange IP Limit      \033[1;35m[\033[1;36m17\033[1;35m] \033[1;32m◈ \033[1;37mSpeedtest Server"
+echo -e "\033[1;35m[\033[1;36m06\033[1;35m] \033[1;32m◈ \033[1;37mChange Password      \033[1;35m[\033[1;36m18\033[1;35m] \033[1;32m◈ \033[1;37mOptimize System"
+echo -e "\033[1;35m[\033[1;36m07\033[1;35m] \033[1;32m◈ \033[1;37mMonitor Online       \033[1;35m[\033[1;36m19\033[1;35m] \033[1;32m◈ \033[1;37mBackup & Restore"
+echo -e "\033[1;35m[\033[1;36m08\033[1;35m] \033[1;32m◈ \033[1;37mClear Expired        \033[1;35m[\033[1;36m20\033[1;35m] \033[1;32m◈ \033[1;37mAuto Exec     $autm"
+echo -e "\033[1;35m[\033[1;36m09\033[1;35m] \033[1;32m◈ \033[1;37mList All Users       \033[1;35m[\033[1;36m21\033[1;35m] \033[1;32m◈ \033[1;37mRestart Services"
+echo -e "\033[1;35m[\033[1;36m10\033[1;35m] \033[1;32m◈ \033[1;37mConnection Ports     \033[1;35m[\033[1;36m22\033[1;35m] \033[1;32m◈ \033[1;37mReboot System"
+echo -e "\033[1;35m[\033[1;36m11\033[1;35m] \033[1;32m◈ \033[1;37mServer Information   \033[1;35m[\033[1;36m23\033[1;35m] \033[1;32m◈ \033[1;37mChange Root Pass"
+echo -e "\033[1;35m[\033[1;36m12\033[1;35m] \033[1;32m◈ \033[1;37mIP Limiter    $stsl  \033[1;35m[\033[1;36m00\033[1;35m] \033[1;32m◈ \033[1;31mExit Menu\033[0m"
 echo ""
 echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -ne "\033[1;32m➔ O QUE DESEJA FAZER \033[1;33m?\033[1;37m : "; read x
+echo -ne "\033[1;32m➔ ရွေးချယ်ရန် \033[1;33m?\033[1;37m : "; read x
 
 case "$x" in 
    1|01) clear; criarusuario; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar!\033[0m"; read ;;
@@ -237,7 +244,7 @@ case "$x" in
    22) clear; reiniciarsistema ;;
    23) clear; senharoot; sleep 3 ;;
    0|00) echo -e "\033[1;31mSaindo...\033[0m"; sleep 2; clear; exit ;;
-   *) echo -e "\n\033[1;31mOpcao invalida !\033[0m"; sleep 2 ;;
+   *) echo -e "\n\033[1;31mOpcao invalida !\033[0m"; sleep 1 ;;
 esac
 done
 }
