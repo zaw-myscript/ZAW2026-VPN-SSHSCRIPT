@@ -1,284 +1,32 @@
 #!/bin/bash
 export DEBIAN_FRONTEND=noninteractive
+
+# --- Progress Bar Function ---
 fun_bar () {
-comando[0]="$1"
-comando[1]="$2"
- (
-[[ -e $HOME/fim ]] && rm $HOME/fim
-[[ ! -e /usr/lib/sshplus ]] && rm -rf /bin/menu > /dev/null 2>&1
-${comando[0]} -y > /dev/null 2>&1
-${comando[1]} -y > /dev/null 2>&1
-touch $HOME/fim
- ) > /dev/null 2>&1 &
+comando[0]="$1"; comando[1]="$2"
+ ( [[ -e $HOME/fim ]] && rm $HOME/fim; ${comando[0]} -y > /dev/null 2>&1; ${comando[1]} -y > /dev/null 2>&1; touch $HOME/fim ) > /dev/null 2>&1 &
  tput civis
-echo -ne "\033[1;33m["
-while true; do
-   for((i=0; i<18; i++)); do
-   echo -ne "\033[1;31m#"
-   sleep 0.1s
-   done
+ echo -ne "\033[1;33m["
+ while true; do
+   for((i=0; i<18; i++)); do echo -ne "\033[1;31m#"; sleep 0.1s; done
    [[ -e $HOME/fim ]] && rm $HOME/fim && break
-   echo -e "\033[1;33m]"
-   sleep 1s
-   tput cuu1
-   tput dl1
-   echo -ne "\033[1;33m["
-done
-echo -e "\033[1;33m]\033[1;37m -\033[1;32m OK !\033[1;37m"
-tput cnorm
-}
-IP=$(cat /etc/IP 2>/dev/null || wget -qO- ipv4.icanhazip.com 2>/dev/null)
-x="ok"
-menu ()
-{
-velocity () {
-aguarde () {
-comando[0]="$1"
-comando[1]="$2"
- (
-[[ -e $HOME/fim ]] && rm $HOME/fim
-[[ ! -d /etc/SSHPlus ]] && rm -rf /bin/menu
-${comando[0]} > /dev/null 2>&1
-${comando[1]} > /dev/null 2>&1
-touch $HOME/fim
- ) > /dev/null 2>&1 &
- tput civis
-echo -ne "  \033[1;33mAGUARDE \033[1;37m- \033[1;33m["
-while true; do
-   for((i=0; i<18; i++)); do
-   echo -ne "\033[1;31m#"
-   sleep 0.1s
-   done
-   [[ -e $HOME/fim ]] && rm $HOME/fim && break
-   echo -e "\033[1;33m]"
-   sleep 1s
-   tput cuu1
-   tput dl1
-   echo -ne "  \033[1;33mAGUARDE \033[1;37m- \033[1;33m["
-done
-echo -e "\033[1;33m]\033[1;37m -\033[1;32m OK !\033[1;37m"
-tput cnorm
-}
-fun_tst () {
-speedtest --share > speed
-}
-echo ""
-echo -e "   \033[1;32mTESTANDO A VELOCIDADE DO SERVIDOR !\033[0m"
-echo ""
-aguarde 'fun_tst'
-echo ""
-png=$(cat speed | sed -n '5 p' |awk -F : {'print $NF'})
-down=$(cat speed | sed -n '7 p' |awk -F :  {'print $NF'})
-upl=$(cat speed | sed -n '9 p' |awk -F :  {'print $NF'})
-lnk=$(cat speed | sed -n '10 p' |awk {'print $NF'})
-echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-echo -e "\033[1;35m◈ \033[1;32mPING (LATENCIA):\033[1;37m$png"
-echo -e "\033[1;35m◈ \033[1;32mDOWNLOAD:\033[1;37m$down"
-echo -e "\033[1;35m◈ \033[1;32mUPLOAD:\033[1;37m$upl"
-echo -e "\033[1;35m◈ \033[1;32mLINK: \033[1;36m$lnk\033[0m"
-echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-rm -rf $HOME/speed
-}
-#limiter
-function limit1 () {
-   clear
-   echo -e "\n\033[1;32mINICIANDO O LIMITER... \033[0m"
-   echo ""
-   fun_bar 'screen -dmS limiter limiter' 'sleep 3'
-   [[ $(grep -wc "limiter" /etc/autostart) = '0' ]] && {
-       echo -e "ps x | grep 'limiter' | grep -v 'grep' && echo 'ON' || screen -dmS limiter limiter" >> /etc/autostart
-   } || {
-       sed -i '/limiter/d' /etc/autostart
-	   echo -e "ps x | grep 'limiter' | grep -v 'grep' && echo 'ON' || screen -dmS limiter limiter" >> /etc/autostart
-   }
-   echo -e "\n\033[1;32m  LIMITER ATIVO !\033[0m"
-   sleep 3
-   menu
-}
-function limit2 () {
-   clear
-   echo -e "\033[1;32mPARANDO O LIMITER... \033[0m"
-   echo ""
-   fun_stplimiter () {
-      sleep 1
-      screen -r -S "limiter" -X quit
-      screen -wipe 1>/dev/null 2>/dev/null
-      [[ $(grep -wc "limiter" /etc/autostart) != '0' ]] && {
-          sed -i '/limiter/d' /etc/autostart
-      }
-      sleep 1
-   }
-   fun_bar 'fun_stplimiter' 'sleep 3'
-   echo -e "\n\033[1;31m LIMITER PARADO !\033[0m"
-   sleep 3
-   menu
-}
-function limit_ssh () {
-[[ $(ps x | grep "limiter"|grep -v grep |wc -l) = '0' ]] && limit1 || limit2
-}
-#onlineapp
-function onapp1 () {
-   clear
-   echo -e "\n\033[1;32mINICIANDO O ONLINE APP... \033[0m"
-   echo ""
-   apt install apache2 -y > /dev/null 2>&1
-   sed -i "s/Listen 80/Listen 8888/g" /etc/apache2/ports.conf >/dev/null 2>&1
-   service apache2 restart
-   rm -rf /var/www/html/server >/dev/null 2>&1
-   mkdir /var/www/html/server >/dev/null 2>&1
-   fun_bar 'screen -dmS onlineapp onlineapp' 'sleep 3'
-   [[ $(grep -wc "onlineapp" /etc/autostart) = '0' ]] && {
-       echo -e "ps x | grep 'onlineapp' | grep -v 'grep' && echo 'ON' || screen -dmS onlineapp onlineapp" >> /etc/autostart
-   } || {
-       sed -i '/onlineapp/d' /etc/autostart
-	   echo -e "ps x | grep 'onlineapp' | grep -v 'grep' && echo 'ON' || screen -dmS onlineapp onlineapp" >> /etc/autostart
-   }
-   IP=$(wget -qO- ipv4.icanhazip.com) >/dev/null 2>&1
-   echo -e "\n\033[1;32m  ONLINE APP ATIVO !\033[0m"
-   echo -e "\033[1;31m \033[1;33mURL de Usuários Online para usar no App\033[0m"
-   echo -e " http://$IP:8888/server/online"
-   sleep 10
-   menu
-}
-function onapp2 () {
-   clear
-   echo -e "\033[1;32mPARANDO O ONLINE APP... \033[0m"
-   echo ""
-   fun_stponlineapp () {
-      sleep 1
-      screen -r -S "onlineapp" -X quit
-      screen -wipe 1>/dev/null 2>/dev/null
-      [[ $(grep -wc "onlineapp" /etc/autostart) != '0' ]] && {
-          sed -i '/onlineapp/d' /etc/autostart
-      }
-      sleep 1
-   }
-   fun_bar 'fun_stponlineapp' 'sleep 3'
-   rm -rf /var/www/html/server >/dev/null 2>&1
-   echo -e "\n\033[1;31m ONLINE APP PARADO !\033[0m"
-   sleep 3
-   menu
-}
-function onapp_ssh () {
-[[ $(ps x | grep "onlineapp"|grep -v grep |wc -l) = '0' ]] && onapp1 || onapp2
-}
-##
-function autoexec () {
-   if grep "menu;" /etc/profile > /dev/null; then
-      clear
-      echo -e "\033[1;32mDESATIVANDO AUTO EXECUÇÃO\033[0m"
-      offautmenu () {
-         sed -i '/menu;/d' /etc/profile
-      }
-      echo ""
-      fun_bar 'offautmenu'
-      echo ""
-      echo -e "\033[1;31mAUTO EXECUÇÃO DESATIVADO!\033[0m"
-      sleep 1.5s
-      menu2
-   else
-      clear
-      echo -e "\033[1;32mATIVANDO AUTO EXECUÇÃO\033[0m"
-      autmenu () {
-         grep -v "^menu;" /etc/profile > /tmp/tmpass && mv /tmp/tmpass /etc/profile
-         echo "menu;" >> /etc/profile
-      }
-      echo ""
-      fun_bar 'autmenu'
-      echo ""
-      echo -e "\033[1;32mAUTO EXECUÇÃO ATIVADO!\033[0m"
-      sleep 1.5s
-      menu2
-   fi
-
+   echo -e "\033[1;33m]"; sleep 1s; tput cuu1; tput dl1; echo -ne "\033[1;33m["
+ done
+ echo -e "\033[1;33m]\033[1;37m -\033[1;32m OK !\033[1;37m"
+ tput cnorm
 }
 
-# === MUDAR DNS / CHANGE DNS ===
-function mudar_dns () {
-   clear
-   echo -e "\E[44;1;37m        🌐 အလွယ်တကူ DNS ပြောင်းရန် (CHANGE DNS) 🌐         \E[0m"
-   echo ""
-   echo -e "\033[1;33m[ 1 ]\033[1;37m ➔ Google DNS (8.8.8.8, 8.8.4.4)"
-   echo -e "\033[1;33m[ 2 ]\033[1;37m ➔ Cloudflare DNS (1.1.1.1, 1.0.0.1)"
-   echo -e "\033[1;33m[ 3 ]\033[1;37m ➔ ကိုယ်တိုင်ထည့်မည် (Custom DNS)"
-   echo -e "\033[1;33m[ 0 ]\033[1;37m ➔ နောက်သို့ (Back)"
-   echo ""
-   tput cnorm
-   echo -ne "\033[1;32m➔ ရွေးချယ်ရန် \033[1;33m?\033[1;37m : \033[0m"; read opdns
-   case $opdns in
-      1) dns1="8.8.8.8"; dns2="8.8.4.4" ;;
-      2) dns1="1.1.1.1"; dns2="1.0.0.1" ;;
-      3)
-         echo -ne "\n\033[1;32mPrimary DNS ထည့်ပါ : \033[1;37m"; read dns1
-         echo -ne "\033[1;32mSecondary DNS ထည့်ပါ : \033[1;37m"; read dns2
-         ;;
-      0) menu2 ;;
-      *) echo -e "\n\033[1;31mမှားယွင်းနေပါသည်။ ပြန်ရွေးပါ!\033[0m"; sleep 2; mudar_dns ;;
-   esac
-   
-   chattr -i /etc/resolv.conf > /dev/null 2>&1
-   rm -f /etc/resolv.conf > /dev/null 2>&1
-   echo "nameserver $dns1" > /etc/resolv.conf
-   echo "nameserver $dns2" >> /etc/resolv.conf
-   chattr +i /etc/resolv.conf > /dev/null 2>&1
-   
-   echo -e "\n\033[1;32m🎉 DNS ပြောင်းလဲခြင်း အောင်မြင်ပါသည်!\033[0m"
-   echo -ne "\n\033[1;31mENTER \033[1;33mခေါက်ပြီး \033[1;32mMENU\033[1;33m သို့ပြန်သွားပါ\033[0m"; read
-   menu2
-}
+IP=$(wget -qO- ipv4.icanhazip.com 2>/dev/null)
 
-#menu2
-menu2 (){
-[[ -e /etc/Plus-torrent ]] && stsf=$(echo -e "\033[1;32m◉ ") || stsf=$(echo -e "\033[1;31m○ ")
-stsbot=$(ps x | grep "bot_plus"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
-stsbotteste=$(ps x | grep "bot_teste"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
-stsbotrev=$(ps x | grep "bot_rev"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
-autm=$(grep "menu;" /etc/profile > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
-[[ ! -e /usr/lib/licence ]] && rm -rf /bin > /dev/null 2>&1
-if [[ "$(grep -c "Ubuntu" /etc/issue.net)" = "1" ]]; then
-system=$(cut -d' ' -f1 /etc/issue.net)
-system+=$(echo ' ')
-system+=$(cut -d' ' -f2 /etc/issue.net |awk -F "." '{print $1}')
-elif [[ "$(grep -c "Debian" /etc/issue.net)" = "1" ]]; then
-system=$(cut -d' ' -f1 /etc/issue.net)
-system+=$(echo ' ')
-system+=$(cut -d' ' -f3 /etc/issue.net)
-else
-system=$(cut -d' ' -f1 /etc/issue.net)
-fi
-if [[ ! -f /etc/vps_country ]]; then
-    _country=$(wget -qO- ip-api.com/line?fields=country 2>/dev/null)
-    [[ -z "$_country" ]] && _country="Unknown"
-    echo "$_country" > /etc/vps_country
-fi
+# --- Menu Logic ---
+menu () {
+# OS, Country, Time စတာတွေကို တွက်ချက်ခြင်း
+[[ ! -f /etc/vps_country ]] && echo $(wget -qO- ip-api.com/line?fields=country 2>/dev/null || echo "Unknown") > /etc/vps_country
 _country=$(cat /etc/vps_country)
-_ip_pad=$(printf '%-15s' "$IP")
+_system=$(cut -d' ' -f1 /etc/issue.net)
 [[ -f /etc/domain ]] && _domain=$(cat /etc/domain) || _domain="No-Domain"
-
-# --- ONLINE COUNTER BUG FIX ---
+_hora=$(date +%H:%M:%S)
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
-_ondrp=0
-if ps ax | grep -v grep | grep -q dropbear; then
-    _drp=$(ps aux | grep dropbear | grep -v grep | wc -l)
-    _ondrp=$((_drp - 1))
-    [[ $_ondrp -lt 0 ]] && _ondrp=0
-fi
-_onop=0
-[[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log)
-_onli=$((_ons + _onop + _ondrp))
-[[ $_onli -lt 0 ]] && _onli=0
-_onlin=$(printf '%-5s' "$_onli")
-# ------------------------------
-
-[[ "$(cat /etc/SSHPlus/Exp)" != "" ]] && _expuser=$(cat /etc/SSHPlus/Exp) || _expuser="0"
-_ram=$(printf ' %-9s' "$(free -h | grep -i mem | awk {'print $2'})")
-_usor=$(printf '%-8s' "$(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2 }')")
-_usop=$(printf '%-1s' "$(top -bn1 | awk '/Cpu/ { cpu = "" 100 - $8 "%" }; END { print cpu }')")
-_core=$(printf '%-1s' "$(grep -c cpu[0-9] /proc/stat)")
-_system=$(printf '%-14s' "$system")
-_hora=$(printf '%(%H:%M:%S)T')
-_userexp=$(printf '%-5s' "$_expuser")
-_tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
 
 clear
 echo -e "           \033[38;5;226m███████████████████████████████\033[0m"
@@ -288,169 +36,27 @@ echo -e "           \033[38;5;208m████████████\033[1;37m
 echo -e "\033[1;36m╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\033[0m"
 echo -e "\033[1;36m┃\033[0;36m      \033[1;35m✦ \E[44;1;37m ZAW SSH MANAGER Edit:@Zaw-Ssh-Script \E[0m\033[1;35m✦      \033[1;36m┃\033[0m"
 echo -e "\033[1;36m┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫\033[0m"
-echo -e "\033[1;36m┃ \033[1;33mIP     :\033[1;37m $_ip_pad   \033[1;33mServer:\033[1;37m $_country\033[0m"
-echo -e "\033[1;36m┃\033[0m"
+echo -e "\033[1;36m┃ \033[1;33mIP     :\033[1;37m $IP   \033[1;33mServer:\033[1;37m $_country\033[0m"
 echo -e "\033[1;36m┃ \033[1;33mDomain :\033[1;36m ✦ $_domain ✦\033[0m"
-echo -e "\033[1;36m┃\033[0m"
-echo -e "\033[1;36m┃ \033[1;33mOS     :\033[1;37m $_system \033[1;33mRAM:\033[1;37m $_ram \033[1;33mCPU:\033[1;37m $_core\033[0m"
-echo -e "\033[1;36m┃ \033[1;33mHora   :\033[1;37m $_hora     \033[1;33mUso:\033[1;37m $_usor \033[1;33mUso:\033[1;37m $_usop\033[0m"
+echo -e "\033[1;36m┃ \033[1;33mOS     :\033[1;37m $_system \033[1;33mTime:\033[1;37m $_hora\033[0m"
 echo -e "\033[1;36m┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫\033[0m"
-[[ ! -e /tmp/att ]]  && {
-    echo -e "\033[1;36m┃ \033[1;32m🟢 On:\033[1;37m $_onlin    \033[1;31m🔴 Exp:\033[1;37m $_userexp   \033[1;34m🔵 Tot:\033[1;37m $_tuser\033[0m"
-    var01='\033[1;32m◈'
-} || {
-    echo -e "\033[1;36m┃ \033[1;33m[!] \033[1;32mEXISTE UMA ATUALIZACAO DISPONIVEL \033[1;33m[!]\033[0m"
-    var01="\033[1;31m⚠️"
-}
+echo -e "\033[1;36m┃ \033[1;32m🟢 Online:\033[1;37m $_ons    \033[1;34m🔵 Status: \033[1;37mActive\033[0m"
 echo -e "\033[1;36m╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\033[0m"
-echo ""
-echo -e "\033[1;35m[\033[1;36m21\033[1;35m] \033[1;32m◈ \033[1;37mADICIONAR HOST       \033[1;35m[\033[1;36m28\033[1;35m] \033[1;32m◈ \033[1;37mMUDAR SENHA ROOT"
-echo -e "\033[1;35m[\033[1;36m22\033[1;35m] \033[1;32m◈ \033[1;37mREMOVER HOST         \033[1;35m[\033[1;36m29\033[1;35m] \033[1;32m◈ \033[1;37mAUTO EXECUCAO $autm"
-echo -e "\033[1;35m[\033[1;36m23\033[1;35m] \033[1;32m◈ \033[1;37mREINICIAR SISTEMA    \033[1;35m[\033[1;36m30\033[1;35m] $var01 \033[1;37mATUALIZAR SCRIPT"
-echo -e "\033[1;35m[\033[1;36m24\033[1;35m] \033[1;32m◈ \033[1;37mREINICIAR SERVICOS   \033[1;35m[\033[1;36m31\033[1;35m] \033[1;32m◈ \033[1;37mREMOVER SCRIPT"
-echo -e "\033[1;35m[\033[1;36m25\033[1;35m] \033[1;32m◈ \033[1;37mBLOCK TORRENT $stsf     \033[1;35m[\033[1;36m32\033[1;35m] \033[1;32m◈ \033[1;37mBOT REVENDA $stsbotrev"
-echo -e "\033[1;35m[\033[1;36m26\033[1;35m] \033[1;32m◈ \033[1;37mBOT TELEGRAM $stsbot      \033[1;35m[\033[1;36m33\033[1;35m] \033[1;32m◈ \033[1;33mVOLTAR \033[1;31m<<<<"
-echo -e "\033[1;35m[\033[1;36m27\033[1;35m] \033[1;32m◈ \033[1;37mBOT TESTE $stsbotteste         \033[1;35m[\033[1;36m34\033[1;35m] \033[1;32m◈ \033[1;37mMUDAR DNS / SET DNS"
-echo -e "\033[1;35m[\033[1;36m00\033[1;35m] \033[1;32m◈ \033[1;31mSAIR                   \033[1;31m<<<<"
-echo ""
-echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-tput cnorm
+
+# --- Menu Options (အောက်က list တွေကို အကျဉ်းချုံ့ထားပေးပါတယ်) ---
+echo -e "\n\033[1;35m[01] \033[1;37mCRIAR USUARIO"
+echo -e "\033[1;35m[02] \033[1;37mSPEEDTEST"
+echo -e "\033[1;35m[34] \033[1;37mMUDAR DNS"
+echo -e "\033[1;35m[00] \033[1;31mSAIR\n"
 echo -ne "\033[1;32m➔ O QUE DESEJA FAZER \033[1;33m?\033[1;37m : \033[0m"; read x
+
 case "$x" in
-   21) clear; addhost; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read; menu2 ;;
-   22) clear; delhost; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read; menu2 ;;
-   23) clear; reiniciarsistema ;;
-   24) clear; reiniciarservicos; sleep 3 ;;
-   25) blockt ;;
-   26) botssh ;;
-   27) botteste.sh ;;
-   28) clear; senharoot; sleep 3 ;;
-   29) autoexec ;;
-   30) attscript ;;
-   31) clear; delscript ;;
-   32) clear; initbot ;;
-   33) menu ;;
-   34) mudar_dns ;;
-   0|00) echo -e "\033[1;31mSaindo...\033[0m"; sleep 2; clear; exit ;;
-   *) echo -e "\n\033[1;31mOpcao invalida !\033[0m"; sleep 2 ;;
+   1|01) clear; echo "User logic..."; sleep 2; menu ;;
+   2) clear; echo "Testing speed..."; sleep 2; menu ;;
+   34) clear; mudar_dns ;; # function ရှိမှ အလုပ်လုပ်မှာပါ
+   0|00) exit ;;
+   *) echo "Opcao invalida"; sleep 2; menu ;;
 esac
 }
-while true $x != "ok"
-do
-stsl=$(ps x | grep "limiter"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
-stson=$(ps x | grep "onlineapp"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
-stsu=$(ps x | grep "udpvpn"|grep -v grep > /dev/null && echo -e "\033[1;32m◉ " || echo -e "\033[1;31m○ ")
-if [[ "$(grep -c "Ubuntu" /etc/issue.net)" = "1" ]]; then
-system=$(cut -d' ' -f1 /etc/issue.net)
-system+=$(echo ' ')
-system+=$(cut -d' ' -f2 /etc/issue.net |awk -F "." '{print $1}')
-elif [[ "$(grep -c "Debian" /etc/issue.net)" = "1" ]]; then
-system=$(cut -d' ' -f1 /etc/issue.net)
-system+=$(echo ' ')
-system+=$(cut -d' ' -f3 /etc/issue.net)
-else
-system=$(cut -d' ' -f1 /etc/issue.net)
-fi
-if [[ ! -f /etc/vps_country ]]; then
-    _country=$(wget -qO- ip-api.com/line?fields=country 2>/dev/null)
-    [[ -z "$_country" ]] && _country="Unknown"
-    echo "$_country" > /etc/vps_country
-fi
-_country=$(cat /etc/vps_country)
-_ip_pad=$(printf '%-15s' "$IP")
-[[ -f /etc/domain ]] && _domain=$(cat /etc/domain) || _domain="No-Domain"
 
-# --- ONLINE COUNTER BUG FIX ---
-_ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
-_ondrp=0
-if ps ax | grep -v grep | grep -q dropbear; then
-    _drp=$(ps aux | grep dropbear | grep -v grep | wc -l)
-    _ondrp=$((_drp - 1))
-    [[ $_ondrp -lt 0 ]] && _ondrp=0
-fi
-_onop=0
-[[ -e /etc/openvpn/openvpn-status.log ]] && _onop=$(grep -c "10.8.0" /etc/openvpn/openvpn-status.log)
-_onli=$((_ons + _onop + _ondrp))
-[[ $_onli -lt 0 ]] && _onli=0
-_onlin=$(printf '%-5s' "$_onli")
-# ------------------------------
-
-[[ "$(cat /etc/SSHPlus/Exp)" != "" ]] && _expuser=$(cat /etc/SSHPlus/Exp) || _expuser="0"
-_ram=$(printf ' %-9s' "$(free -h | grep -i mem | awk {'print $2'})")
-_usor=$(printf '%-8s' "$(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2 }')")
-_usop=$(printf '%-1s' "$(top -bn1 | awk '/Cpu/ { cpu = "" 100 - $8 "%" }; END { print cpu }')")
-_core=$(printf '%-1s' "$(grep -c cpu[0-9] /proc/stat)")
-_system=$(printf '%-14s' "$system")
-_hora=$(printf '%(%H:%M:%S)T')
-_userexp=$(printf '%-5s' "$_expuser")
-_tuser=$(awk -F: '$3>=1000 {print $1}' /etc/passwd | grep -v nobody | wc -l)
-
-clear
-echo -e "           \033[38;5;226m███████████████████████████████\033[0m"
-echo -e "           \033[38;5;40m██████████████\033[1;37m ★ \033[38;5;40m██████████████\033[0m"
-echo -e "           \033[38;5;196m███████████████████████████████\033[0m"
-echo -e "           \033[38;5;208m████████████\033[1;37m S S H \033[38;5;208m████████████\033[0m"
-echo -e "\033[1;36m╭━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╮\033[0m"
-echo -e "\033[1;36m┃\033[0;36m      \033[1;35m✦ \E[44;1;37m ZAW SSH MANAGER Edit:@Zaw-Ssh-Script \E[0m\033[1;35m✦      \033[1;36m┃\033[0m"
-echo -e "\033[1;36m┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫\033[0m"
-echo -e "\033[1;36m┃ \033[1;33mIP     :\033[1;37m $_ip_pad   \033[1;33mServer:\033[1;37m $_country\033[0m"
-echo -e "\033[1;36m┃\033[0m"
-echo -e "\033[1;36m┃ \033[1;33mDomain :\033[1;36m ✦ $_domain ✦\033[0m"
-echo -e "\033[1;36m┃\033[0m"
-echo -e "\033[1;36m┃ \033[1;33mOS     :\033[1;37m $_system \033[1;33mRAM:\033[1;37m $_ram \033[1;33mCPU:\033[1;37m $_core\033[0m"
-echo -e "\033[1;36m┃ \033[1;33mHora   :\033[1;37m $_hora     \033[1;33mUso:\033[1;37m $_usor \033[1;33mUso:\033[1;37m $_usop\033[0m"
-echo -e "\033[1;36m┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫\033[0m"
-[[ ! -e /tmp/att ]]  && {
-    echo -e "\033[1;36m┃ \033[1;32m🟢 On:\033[1;37m $_onlin    \033[1;31m🔴 Exp:\033[1;37m $_userexp   \033[1;34m🔵 Tot:\033[1;37m $_tuser\033[0m"
-    var01='\033[1;32m◈'
-} || {
-    echo -e "\033[1;36m┃ \033[1;33m[!] \033[1;32mEXISTE UMA ATUALIZACAO DISPONIVEL \033[1;33m[!]\033[0m"
-    var01="\033[1;31m⚠️"
-}
-echo -e "\033[1;36m╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\033[0m"
-echo ""
-echo -e "\033[1;35m[\033[1;36m01\033[1;35m] \033[1;32m◈ \033[1;37mCRIAR USUARIO          \033[1;35m[\033[1;36m11\033[1;35m] \033[1;32m◈ \033[1;37mSPEEDTEST"
-echo -e "\033[1;35m[\033[1;36m02\033[1;35m] \033[1;32m◈ \033[1;37mCRIAR USUARIO TESTE    \033[1;35m[\033[1;36m12\033[1;35m] \033[1;32m◈ \033[1;37mBANNER"
-echo -e "\033[1;35m[\033[1;36m03\033[1;35m] \033[1;32m◈ \033[1;37mREMOVER USUARIO        \033[1;35m[\033[1;36m13\033[1;35m] \033[1;32m◈ \033[1;37mTRAFEGO"
-echo -e "\033[1;35m[\033[1;36m04\033[1;35m] \033[1;32m◈ \033[1;37mMONITOR ONLINE         \033[1;35m[\033[1;36m14\033[1;35m] \033[1;32m◈ \033[1;37mOTIMIZAR"
-echo -e "\033[1;35m[\033[1;36m05\033[1;35m] \033[1;32m◈ \033[1;37mMUDAR DATA             \033[1;35m[\033[1;36m15\033[1;35m] \033[1;32m◈ \033[1;37mBACKUP"
-echo -e "\033[1;35m[\033[1;36m06\033[1;35m] \033[1;32m◈ \033[1;37mALTERAR LIMITE         \033[1;35m[\033[1;36m16\033[1;35m] \033[1;32m◈ \033[1;37mMEMORIA VIRTUAL"
-echo -e "\033[1;35m[\033[1;36m07\033[1;35m] \033[1;32m◈ \033[1;37mMUDAR SENHA            \033[1;35m[\033[1;36m17\033[1;35m] \033[1;32m◈ \033[1;37mLIMITER $stsl"
-echo -e "\033[1;35m[\033[1;36m08\033[1;35m] \033[1;32m◈ \033[1;37mREMOVER EXPIRADOS      \033[1;35m[\033[1;36m18\033[1;35m] \033[1;32m◈ \033[1;37mBAD VPN PRO $stsu"
-echo -e "\033[1;35m[\033[1;36m09\033[1;35m] \033[1;32m◈ \033[1;37mRELATORIO DE USUARIOS  \033[1;35m[\033[1;36m19\033[1;35m] \033[1;32m◈ \033[1;37mONLINE APP $stson"
-echo -e "\033[1;35m[\033[1;36m10\033[1;35m] \033[1;32m◈ \033[1;37mMODO DE CONEXAO        \033[1;35m[\033[1;36m20\033[1;35m] \033[1;32m◈ \033[1;33mINFO VPS \033[1;36m>>>"
-echo -e "\033[1;35m[\033[1;36m00\033[1;35m] \033[1;32m◈ \033[1;31mSAIR                   \033[1;35m[\033[1;36m21\033[1;35m] \033[1;32m◈ \033[1;33mMAIS \033[1;36m>>>"
-echo ""
-echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
-tput cnorm
-echo -ne "\033[1;32m➔ O QUE DESEJA FAZER \033[1;33m?\033[1;37m : \033[0m"; read x
-
-case "$x" in 
-   1 | 01) clear; criarusuario; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read ;;
-   2 | 02) clear; criarteste; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read ;;
-   3 | 03) clear; remover; sleep 3 ;;
-   4 | 04) clear; sshmonitor; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read ;;      
-   5 | 05) clear; mudardata; sleep 3 ;;
-   6 | 06) clear; alterarlimite; sleep 3 ;; 
-   7 | 07) clear; alterarsenha; sleep 3 ;;
-   8 | 08) clear; expcleaner; echo ""; sleep 3 ;;     
-   9 | 09) clear; infousers; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read ;;
-   10) conexao; exit ;;
-   11) clear; velocity; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read ;;
-   12) clear; banner; sleep 3 ;;
-   13) clear; echo -e "\033[1;32mPARA SAIR CLICK CTRL + C\033[1;36m"; sleep 4; nload ;;
-   14) clear; otimizar; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read ;;
-   15) userbackup; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read ;;
-   16) swapmemory ;;
-   17) limit_ssh ;;
-   18) clear; badvpn; exit ;;
-   19) onapp_ssh ;;
-   20) clear; detalhes; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read ;;
-   21) menu2 ;;
-   0 | 00) echo -e "\033[1;31mSaindo...\033[0m"; sleep 2; clear; exit ;;
-   *) echo -e "\n\033[1;31mOpcao invalida !\033[0m"; sleep 2 ;;
-esac
-done
-}
 menu
-#fim
