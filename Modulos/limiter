@@ -1,9 +1,10 @@
 #!/bin/bash
 #====================================================
-# Auto Connection Limiter (Strict Mode)
+# Auto Connection Limiter (Strict Mode with Cheat Log)
 #====================================================
 
 database="/root/usuarios.db"
+log_file="/root/cheat.log"
 
 while true; do
     sleep 5
@@ -30,6 +31,12 @@ while true; do
             
             # သတ်မှတ်ထားတဲ့ Limit ထက် ကျော်နေရင် ဖြတ်ချမယ်
             if [[ "$total_conn" -gt "$limit" ]]; then
+
+                # --- [စနစ်အသစ်] ခိုးချိတ်သူ၏ အချက်အလက်ကို Cheat Log ထဲ အလိုအလျောက် ရေးမှတ်ခြင်း ---
+                current_time=$(date '+%Y-%m-%d %H:%M:%S')
+                echo "[$current_time] User: [$user] | ပြိုင်ချိတ်သောဖုန်း: ($total_conn) လုံး | သတ်မှတ် Limit: [$limit] ➔ [သော့ဖြုတ်ချခြင်း ခံရသည်]" >> "$log_file"
+                # ----------------------------------------------------------------------
+
                 # သုံးနေတဲ့ User ရဲ့ Connection တွေကို အကုန် Kill မယ် (သော့ပြုတ်သွားအောင်)
                 pkill -u $user sshd > /dev/null 2>&1
                 pkill -u $user dropbear > /dev/null 2>&1
