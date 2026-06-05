@@ -225,6 +225,28 @@ function mudar_dns () {
    menu2
 }
 
+# === CHEAT LOG SYSTEM (ခိုးချိတ်သူများ မှတ်တမ်း) ===
+function check_cheat_log() {
+    clear
+    echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    echo -e "\033[1;33m    🚫 MULTI-LOGIN CHEAT LOG (ခိုးချိတ်သူများ စာရင်း) 🚫\033[0m"
+    echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    if [ -s /root/cheat.log ]; then
+        cat /root/cheat.log
+        echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+        echo -e "\033[1;31m⚠️ အထက်ပါ User များသည် Limit ကျော်လွန်စွာ သုံးစွဲထားသဖြင့် သော့ဖြုတ်ချခံထားရပါသည်။\033[0m"
+        echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+        echo -ne "\033[1;32m➔ မှတ်တမ်းများကို ရှင်းလင်းမည်လား (y/n)? \033[1;37m"
+        read clear_log
+        if [[ "$clear_log" == "y" || "$clear_log" == "Y" ]]; then
+            > /root/cheat.log
+            echo -e "\033[1;32m✅ မှတ်တမ်းများကို ရှင်းလင်းပြီးပါပြီ။\033[0m"
+        fi
+    else
+        echo -e "\n\033[1;32m✅ ယခုလောလောဆယ် ခိုးချိတ်ထားသော မှတ်တမ်း မရှိသေးပါ။\033[0m\n"
+    fi
+}
+
 # === MULTI-LOGIN PROOF SYSTEM (ငြင်းမရသော သက်သေပြစနစ်) ===
 function check_proof() {
     clear
@@ -333,7 +355,7 @@ echo -e "\033[1;36m┣━━━━━━━━━━━━━━━━━━━�
 echo -e "\033[1;36m╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯\033[0m"
 echo ""
 echo -e "\033[1;35m[\033[1;36m21\033[1;35m] \033[1;32m◈ \033[1;37mADICIONAR HOST       \033[1;35m[\033[1;36m28\033[1;35m] \033[1;32m◈ \033[1;37mMUDAR SENHA ROOT"
-echo -e "\033[1;35m[\033[1;36m22\033[1;35m] \033[1;32m◈ \033[1;37mREMOVER HOST         \033[1;35m[\033[1;36m29\033[1;35m] \033[1;32m◈ \033[1;37mAUTO EXECUCAO $autm"
+echo -e "\033[1;35m[\033[1;36m22\033[1;35m] \033[1;32m◈ \033[1;33mCHEAT MULTI-LOGIN    \033[1;35m[\033[1;36m29\033[1;35m] \033[1;32m◈ \033[1;37mAUTO EXECUCAO $autm"
 echo -e "\033[1;35m[\033[1;36m23\033[1;35m] \033[1;32m◈ \033[1;37mREINICIAR SISTEMA    \033[1;35m[\033[1;36m30\033[1;35m] $var01 \033[1;37mATUALIZAR SCRIPT"
 echo -e "\033[1;35m[\033[1;36m24\033[1;35m] \033[1;32m◈ \033[1;37mREINICIAR SERVICOS   \033[1;35m[\033[1;36m31\033[1;35m] \033[1;32m◈ \033[1;37mREMOVER SCRIPT"
 echo -e "\033[1;35m[\033[1;36m25\033[1;35m] \033[1;32m◈ \033[1;37mBLOCK TORRENT $stsf     \033[1;35m[\033[1;36m32\033[1;35m] \033[1;32m◈ \033[1;37mBOT REVENDA $stsbotrev"
@@ -346,7 +368,7 @@ tput cnorm
 echo -ne "\033[1;32m➔ O QUE DESEJA FAZER \033[1;33m?\033[1;37m : \033[0m"; read x
 case "$x" in
    21) clear; addhost; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read; menu2 ;;
-   22) clear; delhost; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read; menu2 ;;
+   22) clear; check_cheat_log; echo -ne "\n\033[1;31mENTER \033[1;33mခေါက်ပြီး \033[1;32mMENU\033[1;33m သို့ပြန်သွားပါ\033[0m"; read; menu2 ;;
    23) clear; reiniciarsistema ;;
    24) clear; reiniciarservicos; sleep 3 ;;
    25) blockt ;;
