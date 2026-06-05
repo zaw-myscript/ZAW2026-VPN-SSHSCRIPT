@@ -189,7 +189,6 @@ function autoexec () {
       sleep 1.5s
       menu2
    fi
-
 }
 
 # === MUDAR DNS / CHANGE DNS ===
@@ -226,6 +225,38 @@ function mudar_dns () {
    menu2
 }
 
+# === MULTI-LOGIN PROOF SYSTEM (ငြင်းမရသော သက်သေပြစနစ်) ===
+function check_proof() {
+    clear
+    echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    echo -e "\033[1;33m    🔍 MULTI-LOGIN PROOF (အကောင့်ခိုးသုံးမှု သက်သေပြစနစ်) 🔍\033[0m"
+    echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    read -p "➔ စစ်ဆေးမည့် User နာမည်ထည့်ပါ: " target_user
+    echo -e "\n\033[1;32m[*] $target_user ၏ နောက်ဆုံးဝင်ရောက်ခဲ့သော ဖုန်း (IP) မှတ်တမ်းများ...\033[0m"
+    echo -e "\033[1;36m--------------------------------------------------\033[0m"
+    
+    if [ -f /var/log/auth.log ]; then
+        grep -E "sshd.*Accepted password for $target_user|sshd.*Accepted publickey for $target_user" /var/log/auth.log | tail -n 10 | awk '{print "အချိန်: " $1 " " $2 " " $3 " | ချိတ်ဆက်လာသော IP: " $11}' > /tmp/proof_$target_user.txt
+    else
+        journalctl -u ssh -u sshd --no-pager | grep -E "Accepted password for $target_user|Accepted publickey for $target_user" | tail -n 10 | awk '{print "အချိန်: " $1 " " $2 " " $3 " | ချိတ်ဆက်လာသော IP: " $11}' > /tmp/proof_$target_user.txt
+    fi
+
+    if [ -s /tmp/proof_$target_user.txt ]; then
+        cat /tmp/proof_$target_user.txt
+        echo -e "\033[1;36m--------------------------------------------------\033[0m"
+        uniq_ips=$(cat /tmp/proof_$target_user.txt | awk '{print $NF}' | sort | uniq | wc -l)
+        if [ "$uniq_ips" -gt 1 ]; then
+            echo -e "\033[1;31m⚠️ သတိပေးချက်: ဝယ်သူသည် မတူညီသော ဖုန်း (IP) [$uniq_ips] ခုဖြင့် ဝင်ရောက်ထားကြောင်း သက်သေတွေ့ရပါသည်။ (Limit ကျော်လွန်နေပါသည်!)\033[0m"
+        else
+            echo -e "\033[1;32m✅ ပုံမှန်: ဖုန်း (IP) ၁ ခုတည်းမှသာ ဝင်ရောက်ထားပါသည်။\033[0m"
+        fi
+    else
+        echo -e "\033[1;31mမှတ်တမ်း မတွေ့ရှိပါ။ (Login ဝင်ထားခြင်း မရှိသေးပါ)\033[0m"
+    fi
+    echo -e "\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    rm -f /tmp/proof_$target_user.txt
+}
+
 #menu2
 menu2 (){
 [[ -e /etc/Plus-torrent ]] && stsf=$(echo -e "\033[1;32m◉ ") || stsf=$(echo -e "\033[1;31m○ ")
@@ -254,7 +285,6 @@ _country=$(cat /etc/vps_country)
 _ip_pad=$(printf '%-15s' "$IP")
 [[ -f /etc/domain ]] && _domain=$(cat /etc/domain) || _domain="No-Domain"
 
-# --- ONLINE COUNTER BUG FIX ---
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
 _ondrp=0
 if ps ax | grep -v grep | grep -q dropbear; then
@@ -267,7 +297,6 @@ _onop=0
 _onli=$((_ons + _onop + _ondrp))
 [[ $_onli -lt 0 ]] && _onli=0
 _onlin=$(printf '%-5s' "$_onli")
-# ------------------------------
 
 [[ "$(cat /etc/SSHPlus/Exp)" != "" ]] && _expuser=$(cat /etc/SSHPlus/Exp) || _expuser="0"
 _ram=$(printf ' %-9s' "$(free -h | grep -i mem | awk {'print $2'})")
@@ -330,6 +359,7 @@ case "$x" in
    32) clear; initbot ;;
    33) menu ;;
    34) mudar_dns ;;
+   99) check_proof; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read; menu2 ;;
    0|00) echo -e "\033[1;31mSaindo...\033[0m"; sleep 2; clear; exit ;;
    *) echo -e "\n\033[1;31mOpcao invalida !\033[0m"; sleep 2 ;;
 esac
@@ -359,7 +389,6 @@ _country=$(cat /etc/vps_country)
 _ip_pad=$(printf '%-15s' "$IP")
 [[ -f /etc/domain ]] && _domain=$(cat /etc/domain) || _domain="No-Domain"
 
-# --- ONLINE COUNTER BUG FIX ---
 _ons=$(ps -x | grep sshd | grep -v root | grep priv | wc -l)
 _ondrp=0
 if ps ax | grep -v grep | grep -q dropbear; then
@@ -372,7 +401,6 @@ _onop=0
 _onli=$((_ons + _onop + _ondrp))
 [[ $_onli -lt 0 ]] && _onli=0
 _onlin=$(printf '%-5s' "$_onli")
-# ------------------------------
 
 [[ "$(cat /etc/SSHPlus/Exp)" != "" ]] && _expuser=$(cat /etc/SSHPlus/Exp) || _expuser="0"
 _ram=$(printf ' %-9s' "$(free -h | grep -i mem | awk {'print $2'})")
@@ -446,6 +474,7 @@ case "$x" in
    19) onapp_ssh ;;
    20) clear; detalhes; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read ;;
    21) menu2 ;;
+   99) check_proof; echo -ne "\n\033[1;31mENTER \033[1;33mpara retornar ao \033[1;32mMENU!\033[0m"; read ;;
    0 | 00) echo -e "\033[1;31mSaindo...\033[0m"; sleep 2; clear; exit ;;
    *) echo -e "\n\033[1;31mOpcao invalida !\033[0m"; sleep 2 ;;
 esac
